@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
     start_timestamp = to_av_timebase(segment, (AVRational){duration, timescale});
     end_timestamp = to_av_timebase(segment+1, (AVRational){duration, timescale});
 
-    fprintf(stderr, "start_timestamp=%lld;end_timestamp=%lld\n", start_timestamp, end_timestamp);
+    fprintf(stderr, "start_timestamp=%" PRId64 ";end_timestamp=%" PRId64 "\n", start_timestamp, end_timestamp);
     seek_to_timestamp(input_ctx, dec_ctx, start_timestamp);
 
     AVFrame* frame = av_frame_alloc();
@@ -194,7 +194,7 @@ int main(int argc, char** argv) {
         }
 
 #ifdef DEBUG
-        fprintf(stderr, "packet pts=%lld;dts=%lld\n", packet.pts, packet.dts);
+        fprintf(stderr, "packet pts=%" PRId64 ";dts=%" PRId64 "\n", packet.pts, packet.dts);
 #endif
 
         ret = avcodec_receive_frame(dec_ctx, frame);
@@ -206,7 +206,7 @@ int main(int argc, char** argv) {
         } else {
           if (av_compare_ts(frame->pts, input_ctx->streams[packet.stream_index]->time_base, start_timestamp, (AVRational){1, AV_TIME_BASE}) >= 0) {
 
-              fprintf(stderr, "saving frame av base timestamp=%lld\n", to_av_timebase(frame->pts, input_ctx->streams[packet.stream_index]->time_base));
+              fprintf(stderr, "saving frame av base timestamp=%" PRId64 "\n", to_av_timebase(frame->pts, input_ctx->streams[packet.stream_index]->time_base));
               pgm_save(frame->data[0], frame->linesize[0],
                   frame->width, frame->height, "test.pgm");
               exit(0);

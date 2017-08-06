@@ -1,2 +1,2 @@
 default:
-	gcc -g -o vodtool vodtool.c -lavcodec -lavformat -lavutil
+	gcc -Wall -Werror -g -o vodtool vodtool.c -lavcodec -lavformat -lavutil
