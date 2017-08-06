@@ -1,9 +1,17 @@
 #include <libavformat/avformat.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <getopt.h>
 
 static void usage(char* cmd_name) {
-    fprintf(stderr, "%s in.file\n", cmd_name);
+    fprintf(stderr, "usage: %s [options] infile\n", cmd_name);
+    fprintf(stderr, "\n");
+    fprintf(stderr, "Extracts and transcodes the specified segment");
+    fprintf(stderr, "Options:\n");
+    fprintf(stderr, "\t-d, --duration\tThe duration in timescale units of each segment.\tDefault Value: 5\n");
+    fprintf(stderr, "\t-t, --timescale\tThe number of units in a second.\tDefault Value: 1\n");
+    fprintf(stderr, "\t-s, --segment\tThe segment to fetch.\tDefault Value:0\n");
+
     exit(1);
 }
 
@@ -79,23 +87,48 @@ int main(int argc, char** argv) {
     AVPacket packet = {0};
 
     char* input_filename;
-    int start_frame = 264;
-    int duration = 5.0;
+    int duration = 5;
     int timescale = 1;
-    int segment = 14;
+    int segment = 0;
     int64_t start_timestamp;
     int64_t end_timestamp;
     int best_video_stream = 0;
     int best_audio_stream = 0;
     int ret;
 
-    if (argc != 2) {
+    static struct option long_options[] = {
+        {"duration", required_argument, 0, 'd'},
+        {"timescale", required_argument, 0, 't'},
+        {"segment", required_argument, 0, 's'},
+        {"help", no_argument, 0, 'h'},
+        {0, 0, 0, 0},
+    };
+    int option;
+    while ((option = getopt_long(argc, argv, "d:t:s:h?", long_options, NULL)) != -1) {
+        switch (option) {
+            case 'd':
+                duration = atoi(optarg);
+                break;
+            case 't':
+                timescale = atoi(optarg);
+                break;
+            case 's':
+                segment = atoi(optarg);
+                break;
+            case 'h':
+            case '?':
+                usage(argv[0]);
+                break;
+        }
+    }
+
+    if (argc - optind != 1) {
         usage(argv[0]);
     }
 
     av_register_all();
 
-    input_filename = argv[1];
+    input_filename = argv[optind];
 
     input_ctx = open_input_file(input_filename);
 
