@@ -105,6 +105,12 @@ int main(int argc, char** argv) {
     av_dump_format(input_ctx, best_video_stream, input_filename, 0);
     av_dump_format(input_ctx, best_audio_stream, input_filename, 0);
 
+    for (int i = 0; i < input_ctx->nb_streams; i++) {
+        if (i != best_video_stream && i != best_audio_stream) {
+            input_ctx->streams[i]->discard = AVDISCARD_ALL;
+        }
+    }
+
     codec = avcodec_find_decoder(input_ctx->streams[best_video_stream]->codecpar->codec_id);
 
     if (!codec) {
