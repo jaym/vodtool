@@ -54,7 +54,7 @@ static void seek_to_timestamp(AVFormatContext* ctx, AVCodecContext* dec_ctx, int
  * Convert frame the specified timebase to AV_TIME_BASE
  */
 static inline int64_t to_av_timebase(int64_t timestamp, AVRational timebase) {
-    return av_rescale_q(timestamp, (AVRational){AV_TIME_BASE, 1}, timebase);
+    return av_rescale_q(timestamp, timebase, (AVRational){1, AV_TIME_BASE});
 }
 
 
@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
     int start_frame = 264;
     int duration = 5.0;
     int timescale = 1;
-    int segment = 12;
+    int segment = 14;
     int64_t start_timestamp;
     int64_t end_timestamp;
     int best_video_stream = 0;
@@ -128,12 +128,8 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    /** int64_t segment_start = av_rescale(segment, duration, timescale); */
-    /** int64_t segment_end = av_rescale(segment + 1, duration, timescale); */
-    /** start_timestamp = av_rescale(segment_start, AV_TIME_BASE, 1); */
-    /** end_timestamp = av_rescale(segment_end, AV_TIME_BASE, 1); */
-    start_timestamp = to_av_timebase(segment, (AVRational){timescale, duration});
-    end_timestamp = to_av_timebase(segment+1, (AVRational){timescale, duration});
+    start_timestamp = to_av_timebase(segment, (AVRational){duration, timescale});
+    end_timestamp = to_av_timebase(segment+1, (AVRational){duration, timescale});
 
     fprintf(stderr, "start_timestamp=%lld;end_timestamp=%lld\n", start_timestamp, end_timestamp);
     seek_to_timestamp(input_ctx, dec_ctx, start_timestamp);
@@ -143,6 +139,7 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Could not allocate frame\n");
     }
 
+    int i = 0;
     while (ret >= 0) {
 
         ret = av_read_frame(input_ctx, &packet);
@@ -167,10 +164,13 @@ int main(int argc, char** argv) {
             fprintf(stderr, "Didn't get frame\n");
             exit(1);
         } else {
-            fprintf(stderr, "frame pts=%lld\n", frame->pts);
-            pgm_save(frame->data[0], frame->linesize[0],
-                     frame->width, frame->height, "test.pgm");
-            exit(0);
+          if (av_compare_ts(frame->pts, input_ctx->streams[packet.stream_index]->time_base, start_timestamp, (AVRational){1, AV_TIME_BASE}) >= 0) {
+
+              fprintf(stderr, "saving frame av base timestamp=%lld\n", to_av_timebase(frame->pts, input_ctx->streams[packet.stream_index]->time_base));
+              pgm_save(frame->data[0], frame->linesize[0],
+                  frame->width, frame->height, "test.pgm");
+              exit(0);
+            }
         }
 
         av_packet_unref(&packet);
