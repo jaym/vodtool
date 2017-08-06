@@ -178,7 +178,6 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Could not allocate frame\n");
     }
 
-    int i = 0;
     while (ret >= 0) {
 
         ret = av_read_frame(input_ctx, &packet);
@@ -194,7 +193,9 @@ int main(int argc, char** argv) {
           exit(1);
         }
 
+#ifdef DEBUG
         fprintf(stderr, "packet pts=%lld;dts=%lld\n", packet.pts, packet.dts);
+#endif
 
         ret = avcodec_receive_frame(dec_ctx, frame);
         if (ret == AVERROR(EAGAIN)) {
@@ -214,7 +215,4 @@ int main(int argc, char** argv) {
 
         av_packet_unref(&packet);
     }
-
-
-
 }
