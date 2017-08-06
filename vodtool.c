@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
     int start_frame = 264;
     int duration = 5.0;
     int timescale = 1;
-    int segment = 60;
+    int segment = 12;
     int64_t start_timestamp;
     int64_t end_timestamp;
     int best_video_stream = 0;
@@ -128,10 +128,12 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    int64_t segment_start = av_rescale(segment, duration, timescale);
-    int64_t segment_end = av_rescale(segment + 1, duration, timescale);
-    start_timestamp = av_rescale(segment_start, AV_TIME_BASE, 1);
-    end_timestamp = av_rescale(segment_end, AV_TIME_BASE, 1);
+    /** int64_t segment_start = av_rescale(segment, duration, timescale); */
+    /** int64_t segment_end = av_rescale(segment + 1, duration, timescale); */
+    /** start_timestamp = av_rescale(segment_start, AV_TIME_BASE, 1); */
+    /** end_timestamp = av_rescale(segment_end, AV_TIME_BASE, 1); */
+    start_timestamp = to_av_timebase(segment, (AVRational){timescale, duration});
+    end_timestamp = to_av_timebase(segment+1, (AVRational){timescale, duration});
 
     fprintf(stderr, "start_timestamp=%lld;end_timestamp=%lld\n", start_timestamp, end_timestamp);
     seek_to_timestamp(input_ctx, dec_ctx, start_timestamp);
