@@ -35,17 +35,26 @@ static int find_best_stream(AVFormatContext* ctx, enum AVMediaType type) {
     return best_stream;
 }
 
-static void seek_to_frame(AVFormatContext* ctx, AVCodecContext* dec_ctx, int video_stream, int start_frame) {
-    int64_t timestamp;
+/**
+ * Seek to the specified timestamp. This will seek to the closest key frame that is before or
+ * equal to the specified timestamp.
+ *
+ * The timestamp is in AV_TIME_BASE units
+ */
+static void seek_to_timestamp(AVFormatContext* ctx, AVCodecContext* dec_ctx, int64_t max_timestamp) {
     int ret;
 
-    timestamp = av_rescale_q(start_frame, dec_ctx->time_base, ctx->streams[video_stream]->time_base);
-    /** timestamp = 251000; */
-
-    if((ret = av_seek_frame(ctx, video_stream, timestamp, AVSEEK_FLAG_BACKWARD)) < 0) {
+    if((ret = avformat_seek_file(ctx, -1, 0, max_timestamp, max_timestamp, 0)) < 0) {
         fprintf(stderr, "Could not seek\n");
         exit(1);
     }
+}
+
+/**
+ * Convert frame the specified timebase to AV_TIME_BASE
+ */
+static inline int64_t to_av_timebase(int64_t timestamp, AVRational timebase) {
+    return av_rescale_q(timestamp, (AVRational){AV_TIME_BASE, 1}, timebase);
 }
 
 
@@ -71,7 +80,11 @@ int main(int argc, char** argv) {
 
     char* input_filename;
     int start_frame = 264;
-    int num_frames = 0;
+    int duration = 5.0;
+    int timescale = 1;
+    int segment = 60;
+    int64_t start_timestamp;
+    int64_t end_timestamp;
     int best_video_stream = 0;
     int best_audio_stream = 0;
     int ret;
@@ -115,7 +128,13 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    seek_to_frame(input_ctx, dec_ctx, best_video_stream, start_frame);
+    int64_t segment_start = av_rescale(segment, duration, timescale);
+    int64_t segment_end = av_rescale(segment + 1, duration, timescale);
+    start_timestamp = av_rescale(segment_start, AV_TIME_BASE, 1);
+    end_timestamp = av_rescale(segment_end, AV_TIME_BASE, 1);
+
+    fprintf(stderr, "start_timestamp=%lld;end_timestamp=%lld\n", start_timestamp, end_timestamp);
+    seek_to_timestamp(input_ctx, dec_ctx, start_timestamp);
 
     AVFrame* frame = av_frame_alloc();
     if (!frame) {
